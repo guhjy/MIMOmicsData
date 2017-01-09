@@ -1,0 +1,19 @@
+Package: MIMOmicsData
+Type: Package
+Title: Generate MIMOmics simulated data
+Version: 0.0.1
+Author: MIMOmics Consortium
+Maintainer: MIMOmics <mimomics@lumc.nl>
+Description: Generate two Omics data based on genetics and measurement error.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports:
+    stats,
+    utils,
+    MASS,
+    dplyr,
+    gplots,
+    magrittr,
+    stringr
+RoxygenNote: 5.0.1
