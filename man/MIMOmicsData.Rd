@@ -8,6 +8,12 @@
 \description{
 Generate Omics simulated data based on Glycan genetics and Measurement error.
 }
+\section{To Do}{
+
+Age sex, but which scale and for which glycans in what order?
+Simulate genotypes, but how about correlation structure?
+}
+
 \section{Background}{
 
 One.

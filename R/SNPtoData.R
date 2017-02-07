@@ -8,6 +8,10 @@
 #' Maintainer
 #' MIMOmics (\email{mimomics@lumc.nl})
 #'
+#' @section To Do:
+#' Age sex, but which scale and for which glycans in what order?
+#' Simulate genotypes, but how about correlation structure?
+#'
 #' @section Background:
 #' One.
 #'
@@ -21,7 +25,7 @@
 #' @name MIMOmicsData
 #' @keywords MIMOmics Omics DataPackage
 #' @importFrom MASS mvrnorm
-#' @importFrom stats complete.cases quantile rbinom rnorm runif
+#' @importFrom stats complete.cases quantile rbinom rnorm runif cor qnorm
 #' @importFrom utils read.csv read.table
 #' @import dplyr gplots stringr magrittr
 NULL
@@ -58,6 +62,33 @@ coeffRV <- function(X,Y){
   X=scale(X,scale=F)
   Y=scale(Y,scale=F)
   ssq(t(Y)%*%X) / sqrt(ssq(t(X)%*%X)*ssq(t(Y)%*%Y))
+}
+
+#' Simulate genetic data from observed frequencies and correlations
+#'
+#' @param nr_samples Integer, sample size
+#' @param Pr Numeric matrix with frequencies, one of datasets in this package
+#' @param Corr Numeric matrix with correlations, one of datasets in this package
+#'
+#' @export
+SimuGeno <- function(nr_samples = 1742, Pr = Probs, Corr = Cors){
+  if(is.null(nr_samples)) nr_samples = 1742
+  #if(is.null(Probs)) Probs = data(Probs, package="MIMOmicsData")
+  #if(is.null(Cors)) Cors = data(Cors, package="MIMOmicsData")
+  X = MASS::mvrnorm(nr_samples, 0*1:ncol(Pr), Corr);
+  Lo = qnorm(Pr[1,])
+  Up = qnorm(1-Pr[3,])
+  X2 = t(X)
+  X2[which(X<=Lo)] = 0
+  X2[which(X>Lo & X<=Up)] = 1
+  X2[which(X>Up)] = 2
+  # X2
+
+
+  stmp = as.data.frame(t(X2))
+  # names(stmp) <- colnames(Corr)
+  class(stmp) <- c("SimuData", "data.frame")
+  return(stmp)
 }
 
 # ############## SET PARAMETERS
@@ -133,38 +164,40 @@ GenData <- function(nr_X2vars = 100,
                     )
 {
   p_X2 = nr_X2vars
-  SNPkor = read.table(file = system.file("extdata","data_Kor.raw",package='MIMOmicsData'),header=TRUE)
-  SNPvis = read.table(file = system.file("extdata","data_Vis.raw",package='MIMOmicsData'),header=TRUE)
+  # SNPkor = read.table(file = system.file("extdata","data_Kor.raw",package='MIMOmicsData'),header=TRUE)
+  # SNPvis = read.table(file = system.file("extdata","data_Vis.raw",package='MIMOmicsData'),header=TRUE)
+  #
+  # ## SELECT intersecting names
+  # namesBoth = intersect(names(SNPkor),names(SNPvis))
+  # SNPkor %>% select(one_of(namesBoth)) -> SNPkor2
+  # SNPvis %>% select(one_of(namesBoth)) -> SNPvis2
+  #
+  # # Complete cases
+  # SNPkor2 %>% filter(complete.cases(.)) -> SNPkor3
+  # SNPvis2 %>% filter(complete.cases(.)) -> SNPvis3
+  #
+  # #cat(paste(as.character(SNPvis$FID[unique(which(is.na(SNPvis2),arr.ind = T)[,1])]),as.character(SNPvis$FID[unique(which(is.na(SNPvis2),arr.ind = T)[,1])])),sep='\n')
+  #
+  # ## REMOVE Heterozygous variables
+  # SNPkor3 %>% select(-c(1,3:6)) %>% rename(ID = IID) %>% select(-ends_with("HET")) -> SNPkor4
+  # SNPvis3 %>% select(-c(1,3:6)) %>% rename(ID = IID) %>% select(-ends_with("HET")) -> SNPvis4
+  #
+  # ## RBIND the data
+  # SNPkor4 %>% rbind(SNPvis4) -> SNPdat
 
-  ## SELECT intersecting names
-  namesBoth = intersect(names(SNPkor),names(SNPvis))
-  SNPkor %>% select(one_of(namesBoth)) -> SNPkor2
-  SNPvis %>% select(one_of(namesBoth)) -> SNPvis2
-
-  # Complete cases
-  SNPkor2 %>% filter(complete.cases(.)) -> SNPkor3
-  SNPvis2 %>% filter(complete.cases(.)) -> SNPvis3
-
-  #cat(paste(as.character(SNPvis$FID[unique(which(is.na(SNPvis2),arr.ind = T)[,1])]),as.character(SNPvis$FID[unique(which(is.na(SNPvis2),arr.ind = T)[,1])])),sep='\n')
-
-  ## REMOVE Heterozygous variables
-  SNPkor3 %>% select(-c(1,3:6)) %>% rename(ID = IID) %>% select(-ends_with("HET")) -> SNPkor4
-  SNPvis3 %>% select(-c(1,3:6)) %>% rename(ID = IID) %>% select(-ends_with("HET")) -> SNPvis4
-
-  ## RBIND the data
-  SNPkor4 %>% rbind(SNPvis4) -> SNPdat
+  SNPdat <- SimuGeno()
 
   # SNPp = list met p-values
   hits_glycans = as.list(read.csv(system.file("extdata","UPLC_IgG_varianceExplained_byGlycan.csv",package='MIMOmicsData'), header=T, sep=';'))
   SNPhits = sapply(1:length(hits_glycans[[2]]), function(i) strsplit(as.character(hits_glycans$SNPs[i]),split=';'))
   SNPp = sapply(1:length(hits_glycans[[2]]), function(i) hits_glycans$beta[i] %>% as.character %>% strsplit(split=';') %>% extract2(1) %>% as.numeric)
 
-  SNPhits2 = sapply(2:ncol(SNPdat), function(k) sapply(1:length(SNPhits), function(i) max(grep(str_sub(names(SNPdat)[k],end=-3), str_to_upper(str_trim(SNPhits[[i]]))),0)))
-  colnames(SNPhits2) = colnames(SNPdat)[-1]
+  SNPhits2 = sapply(1:ncol(SNPdat), function(k) sapply(1:length(SNPhits), function(i) max(grep(str_sub(names(SNPdat)[k],end=-3), str_to_upper(str_trim(SNPhits[[i]]))),0)))
+  colnames(SNPhits2) = colnames(SNPdat)
 
   # WeightMat1 contains the weights for X1
   SNPscore = matrix(NA, nrow(SNPdat), nrow(SNPhits2))
-  WeightMat1 = matrix(0, ncol(SNPdat[,-1]), nrow(SNPhits2))
+  WeightMat1 = matrix(0, ncol(SNPdat), nrow(SNPhits2))
   for(IGP in 1:nrow(SNPhits2)){
     ind = which(SNPhits2[IGP,] > 0)
     WeightMat1[ind,IGP] = SNPp[[IGP]][SNPhits2[IGP,ind]]
@@ -177,10 +210,11 @@ GenData <- function(nr_X2vars = 100,
   rownames(X1) <- rownames(SNPscore)
 
   # data2b contain random SNPs
-  data2b <- read.table(file = system.file("extdata","datareduce.raw",package='MIMOmicsData'),header=TRUE)[,-(2:6)]
+  # data2b <- read.table(file = system.file("extdata","datareduce.raw",package='MIMOmicsData'),header=TRUE)[,-(2:6)]
+  data2b <- SimuGeno(Pr = Probs2, Corr = Cors2)
   # order so that names match with first dataset SNPdat
-  ordernames2b <- order(sapply(1:nrow(data2b), function(i) which(as.character(data2b$FID[i]) == as.character(SNPdat$ID))))
-  data2b<- data2b[ordernames2b,-1]
+  #ordernames2b <- order(sapply(1:nrow(data2b), function(i) which(as.character(data2b$FID[i]) == as.character(SNPdat$ID))))
+  #data2b<- data2b[ordernames2b,-1]
 
   # data2 contains both first set of SNPs and random SNPs
   data2 = cbind(SNPdat, data2b)
@@ -196,7 +230,7 @@ GenData <- function(nr_X2vars = 100,
   permuted_cols = sample(1:72)
   WeightMat[1:29,1:72] = (1-similarity_data) * WeightMat[1:29,1:72]*0 + similarity_data * WeightMat1[,permuted_cols]/ sqrt(ssq(WeightMat1)) * 100
   WeightMat[1:29,73:p_X2] %<>% multiply_by(0)
-  X2 = as.matrix(data2[,-1]) %*% WeightMat
+  X2 = as.matrix(data2) %*% WeightMat
 
   # Meas.err.
   covUa <- matrix(meas_add_X1[1], ncol(SNPscore),ncol(SNPscore)) # additive
@@ -222,7 +256,7 @@ GenData <- function(nr_X2vars = 100,
   #Association with outcome via a subset of the 29 snps which generate X1 (not added value of X2)#
   p1<-15
   beta1<-c(runif(p1,0,1),rep(0,29-p1))
-  y1<-as.matrix(SNPdat[,-1])%*%beta1+rnorm(nrow(SNPdat),0,1) #continuous
+  y1<-as.matrix(SNPdat)%*%beta1+rnorm(nrow(SNPdat),0,1) #continuous
   d1<-(y1>=quantile(y1)[4])                                  #binary
 
   #Association with outcome via a subset of the 149 snps which generate X2 (and not X1)#
@@ -234,40 +268,7 @@ GenData <- function(nr_X2vars = 100,
   y<-y1+y2
   d<-(y1>=quantile(y1)[4])
 
-  outp = list(X1 = X1, X1m = X1m, X2 = X2, X2m = X2m, y = y, d1 = d1, d = d)
+  outp = list(SNP1 = SNPdat, SNP2 = data2b, X1 = X1, X1m = X1m, X2 = X2, X2m = X2m, y = y, d1 = d1, d = d)
   class(outp) <- "MIMOmicsData"
   return(outp)
-}
-
-#' Plot heatmaps of simulated data
-#'
-#' @param x A MIMOmicsData object as generated by \code{\link{GenData}}.
-#' @return NULL
-#' @keywords internal
-#' @export
-plot.MIMOmicsData <- function(x, ...){
-  with(x, {
-    suppressWarnings(heatmap.2(cor(X1[,-which(colSums(X1)==0)]), Rowv=F, Colv=F, col = bluered, breaks=seq(-1,1,length.out = 100),symm=T, trace="n",main='X1 corr w/o zero-sd IGPs'))
-    suppressWarnings(heatmap.2(cor(X1m), Rowv=F, Colv=F, col = bluered, breaks=seq(-1,1,length.out = 100),symm=T, trace="n",main='X1m with all IGP'))
-    suppressWarnings(heatmap.2(cor(X2), Rowv=F, Colv=F, col = bluered, breaks=seq(-1,1,length.out = 100),symm=T, trace="n",main='X2'))
-    suppressWarnings(heatmap.2(cor(X2m), Rowv=F, Colv=F, col = bluered, breaks=seq(-1,1,length.out = 100),symm=T, trace="n",main='X2m'))
-    if(ncol(X2m)>=100){
-      suppressWarnings(heatmap.2(cor(X1m,X2m[,1:100]), Rowv=F, Colv=F, col = bluered, breaks=seq(-1,1,length.out = 100),symm=F, trace="n",main='Cor between X1m and X2m (first 100 variables)'))
-    }
-  })
-}
-
-#' Print RV coefs of simulated data
-#'
-#' @inheritParams plot.MIMOmicsData
-#' @return NULL
-#' @keywords internal
-#' @export
-print.MIMOmicsData <- function(x, digits = 3, ...){
-  with(x, {
-    cat("RV coeff between error free X1 and X2:", coeffRV(X1, X2) %>% round(digits),'\n')
-    cat("RV coeff between noisy X1m and X2m:", coeffRV(X1m, X2m) %>% round(digits),'\n')
-    cat("RV coeff between X1 and X1m:", coeffRV(X1, X1m) %>% round(digits),'\n')
-    cat("RV coeff between X2 and X2m:", coeffRV(X2, X2m) %>% round(digits),'\n')
-  })
 }
