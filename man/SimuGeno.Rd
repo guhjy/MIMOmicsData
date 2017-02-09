@@ -16,4 +16,3 @@ SimuGeno(nr_samples = 1742, Pr = Probs, Corr = Cors)
 \description{
 Simulate genetic data from observed frequencies and correlations
 }
-

@@ -18,4 +18,3 @@ Escoufier's RV coeff, measure of similarity
 This is an implementation of Escoufier's RV coefficient.
 The memory needed is of order \eqn{p^2} with \eqn{p} the number of variables.
 }
-

@@ -28,6 +28,7 @@ Two.
 
 Three.
 }
+
 \author{
 MIMOmics consortium
 
@@ -37,4 +38,3 @@ MIMOmics (\email{mimomics@lumc.nl})
 \keyword{DataPackage}
 \keyword{MIMOmics}
 \keyword{Omics}
-

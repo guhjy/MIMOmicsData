@@ -12,4 +12,3 @@
 \description{
 Plot difference of Simulated and Observed correlations
 }
-

@@ -13,4 +13,3 @@
 Plot heatmaps of simulated data
 }
 \keyword{internal}
-

@@ -58,4 +58,3 @@ meas_mult_X1 = c(0.05, 0.1)
 meas_add_X2 = c(0.5, 1) / 4
 meas_mult_X2 = c(0.01, 0.02)
 }
-

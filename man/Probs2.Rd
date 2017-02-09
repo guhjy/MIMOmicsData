@@ -15,4 +15,3 @@ Probs2
 Observed allele proportions in X2 dataset coded as 0, 1 and 2
 }
 \keyword{datasets}
-
