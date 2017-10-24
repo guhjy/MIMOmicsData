@@ -4,12 +4,14 @@
 \alias{GenData}
 \title{Generate simulated omics data}
 \usage{
-GenData(nr_X2vars = 100, similarity_data = 1, within_corr = 0.1,
-  weight_shared_SNPs = 0, meas_add_X1 = c(0.25, 0.5),
+GenData(nr_samples = 1742, nr_X2vars = 100, similarity_data = 1,
+  within_corr = 0.1, weight_shared_SNPs = 0, meas_add_X1 = c(0.25, 0.5),
   meas_mult_X1 = meas_add_X1/5, meas_add_X2 = meas_add_X1/2,
-  meas_mult_X2 = meas_mult_X1/5)
+  meas_mult_X2 = meas_mult_X1/5, beta_y1 = NULL, beta_y2 = NULL)
 }
 \arguments{
+\item{nr_samples}{Integer, sample size}
+
 \item{nr_X2vars}{Number of X2 variables}
 
 \item{similarity_data}{Between 0 and 1. How similar are X1 and X2?}

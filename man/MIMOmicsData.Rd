@@ -10,8 +10,12 @@ Generate Omics simulated data based on Glycan genetics and Measurement error.
 }
 \section{To Do}{
 
-Age sex, but which scale and for which glycans in what order?
-Simulate genotypes, but how about correlation structure?
+\itemize{
+\item{}{Age sex, but which scale and for which glycans in what order?}
+\item{}{Allow for nr X2 variables smaller than 73.}
+\item{}{Allow for arbitraty nr of X1 variables.}
+\item{}{Nr of samples.}
+}
 }
 
 \section{Background}{

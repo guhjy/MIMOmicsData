@@ -16,5 +16,5 @@ Imports:
     gplots,
     magrittr,
     stringr
-RoxygenNote: 6.0.0
+RoxygenNote: 6.0.1
 Suggests: testthat

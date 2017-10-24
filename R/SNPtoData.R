@@ -9,9 +9,12 @@
 #' MIMOmics (\email{mimomics@lumc.nl})
 #'
 #' @section To Do:
-#' Age sex, but which scale and for which glycans in what order?
-#' Simulate genotypes, but how about correlation structure?
-#'
+#' \itemize{
+#' \item{}{Age sex, but which scale and for which glycans in what order?}
+#' \item{}{Allow for nr X2 variables smaller than 73.}
+#' \item{}{Allow for arbitraty nr of X1 variables.}
+#' \item{}{Nr of samples.}
+#' }
 #' @section Background:
 #' One.
 #'
@@ -72,7 +75,7 @@ coeffRV <- function(X,Y){
 #'
 #' @export
 SimuGeno <- function(nr_samples = 1742, Pr = Probs, Corr = Cors){
-  if(is.null(nr_samples)) nr_samples = 1742
+  #if(is.null(nr_samples)) nr_samples = 1742
   #if(is.null(Probs)) Probs = data(Probs, package="MIMOmicsData")
   #if(is.null(Cors)) Cors = data(Cors, package="MIMOmicsData")
   X = MASS::mvrnorm(nr_samples, 0*1:ncol(Pr), Corr);
@@ -116,6 +119,7 @@ SimuGeno <- function(nr_samples = 1742, Pr = Probs, Corr = Cors){
 #'
 #' Generate simulated omics data using genetics from the MIMOmics consortium.
 #'
+#' @inheritParams SimuGeno
 #' @param nr_X2vars Number of X2 variables
 #' @param similarity_data Between 0 and 1. How similar are X1 and X2?
 #' @param within_corr Between 0 and 1. Within correlation of X2.
@@ -153,14 +157,17 @@ SimuGeno <- function(nr_samples = 1742, Pr = Probs, Corr = Cors){
 #' meas_mult_X2 = c(0.01, 0.02)
 #' @export
 
-GenData <- function(nr_X2vars = 100,
+GenData <- function(nr_samples = 1742,
+                    nr_X2vars = 100,
                     similarity_data = 1,
                     within_corr = 0.1,
                     weight_shared_SNPs = 0,
                     meas_add_X1 = c(.25, .5),
                     meas_mult_X1 = meas_add_X1/5,
                     meas_add_X2 = meas_add_X1/2,
-                    meas_mult_X2 = meas_mult_X1/5
+                    meas_mult_X2 = meas_mult_X1/5,
+                    beta_y1 = NULL,
+                    beta_y2 = NULL
                     )
 {
   p_X2 = nr_X2vars
@@ -185,7 +192,7 @@ GenData <- function(nr_X2vars = 100,
   # ## RBIND the data
   # SNPkor4 %>% rbind(SNPvis4) -> SNPdat
 
-  SNPdat <- SimuGeno()
+  SNPdat <- SimuGeno(nr_samples)
 
   # SNPp = list met p-values
   hits_glycans = as.list(read.csv(system.file("extdata","UPLC_IgG_varianceExplained_byGlycan.csv",package='MIMOmicsData'), header=T, sep=';'))
@@ -211,7 +218,7 @@ GenData <- function(nr_X2vars = 100,
 
   # data2b contain random SNPs
   # data2b <- read.table(file = system.file("extdata","datareduce.raw",package='MIMOmicsData'),header=TRUE)[,-(2:6)]
-  data2b <- SimuGeno(Pr = Probs2, Corr = Cors2)
+  data2b <- SimuGeno(nr_samples = nr_samples, Pr = Probs2, Corr = Cors2)
   # order so that names match with first dataset SNPdat
   #ordernames2b <- order(sapply(1:nrow(data2b), function(i) which(as.character(data2b$FID[i]) == as.character(SNPdat$ID))))
   #data2b<- data2b[ordernames2b,-1]
@@ -256,19 +263,21 @@ GenData <- function(nr_X2vars = 100,
   #Association with outcome via a subset of the 29 snps which generate X1 (not added value of X2)#
   p1<-15
   beta1<-c(runif(p1,0,1),rep(0,29-p1))
+  if(is.numeric(beta_y1)) beta1 <- beta_y1
   y1<-as.matrix(SNPdat)%*%beta1+rnorm(nrow(SNPdat),0,1) #continuous
   d1<-(y1>=quantile(y1)[4])                                  #binary
 
   #Association with outcome via a subset of the 149 snps which generate X2 (and not X1)#
   p2<-15
   beta2<-c(runif(p2,0,1),rep(0,147-p2))
+  if(is.numeric(beta_y2)) beta1 <- beta_y2
   y2<-as.matrix(data2b)%*%beta2+rnorm(nrow(data2b),0,1)
 
   #Association with outcome via both X1 and X2 (added value of X2)#
   y<-y1+y2
   d<-(y1>=quantile(y1)[4])
 
-  outp = list(SNP1 = SNPdat, SNP2 = data2b, X1 = X1, X1m = X1m, X2 = X2, X2m = X2m, y = y, d1 = d1, d = d)
+  outp = list(SNP1 = SNPdat, SNP2 = data2b, X1 = X1, X1m = X1m, X2 = X2, X2m = X2m, y1 = y1, y = y, d1 = d1, d = d)
   class(outp) <- "MIMOmicsData"
   return(outp)
 }
